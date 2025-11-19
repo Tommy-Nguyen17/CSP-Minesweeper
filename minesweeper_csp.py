@@ -22,8 +22,12 @@ instance = ((? ? 1 1 ? )
 
 """
 
-# Provable function that checks if that statement can be proven
-# TODO
+# Provable function that checks if that statement can be proven (proof by contradiction)
+def provable(z3solver: z3.Solver, statement: z3.z3.BoolRef):
+    z3solver.push()
+    z3solver.add(z3.Not(statement))
+    z3solver.pop()
+    return z3solver.check() == z3.unsat
 
 # Create the solver
 solver = z3.Solver()
@@ -37,7 +41,7 @@ for row in range(0, 5):
     numberSpace.append([])
     for col in range (0, 5):
         hasMine[row].append(z3.Bool("*" + str(row) + str(col)))
-        numberSpace[row].append(z3.Bool("_" + str(row) + str(col)))
+        numberSpace[row].append(z3.Int(str(row) + str(col)))
 
 # Background knowledge about what the numbers mean.
 for row in range(0, 5):
@@ -55,6 +59,8 @@ for row in range(0, 5):
         solver.add(z3.Implies(numberSpace[row][col], z3.Not(hasMine[row][col])))
         # If a square has a number, there are that many mines adjacent to it
         solver.add(z3.Implies(numberSpace[row][col], z3.Or(mine_neighbors)))
+        # The sum of mines in adjacent squares is exactly the number
+        #TODO
 
 print("On this board, _ marks a square definitely doesn't contain a mine")
 print("\tand * marks a square that definitely contains a mine,")
@@ -67,17 +73,17 @@ while answer != "Q":
 
     print("You are exploring a grid of rows 0-4 and columns 0-4.")
     print("Please type in one of the following:")
-    # Type in info about the thingy
+    # Type in info about the number placements
     print("\t2 0 1 if there are 2 mines adjacent to row 0 column 1")
     print("\tQ if you wish to exit because you won / died / got bored")
 
     # Find out what happened at this time step.
-    answer = input("Your current knowledge: ")
+    answer = input("Please enter your board as (number of mines adjacent) (row) (column): ")
 
-    # Adding constraints to the solver
+    # Adding user input into solver
     if len(answer) == 5 and answer[0] in ["0", "1", "2", "3", "4", "5", "6", "7", "8"] and answer[1] == " " and answer [3] == " " and answer[2] in ["0", "1", "2", "3", "4"] and answer[4] in ["0", "1", "2", "3", "4"]:
-        # TODO
-        pass
+        solver.add(numberSpace[int(answer[2])][int(answer[4])] == int(answer[0]))
     elif answer != "Q":
         print("Your response was not understood.")
     print()
+
