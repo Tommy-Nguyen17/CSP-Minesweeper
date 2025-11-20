@@ -26,8 +26,9 @@ instance = ((? ? 1 1 ? )
 def provable(z3solver: z3.Solver, statement: z3.z3.BoolRef):
     z3solver.push()
     z3solver.add(z3.Not(statement))
+    result = z3solver.check() == z3.unsat
     z3solver.pop()
-    return z3solver.check() == z3.unsat
+    return result
 
 # Create the solver
 solver = z3.Solver()
@@ -56,15 +57,19 @@ for row in range(0, 5):
         if row < 4 and col > 0: mine_neighbors.append(hasMine[row + 1][col - 1])
         if row < 4 and col < 4: mine_neighbors.append(hasMine[row + 1][col + 1])
         # If a space is a number space, it can't have a mine
-        solver.add(z3.Implies(numberSpace[row][col], z3.Not(hasMine[row][col])))
-        # If a square has a number, there are that many mines adjacent to it
-        solver.add(z3.Implies(numberSpace[row][col], z3.Or(mine_neighbors)))
-        # The sum of mines in adjacent squares is exactly the number
-        #TODO
+        solver.add(z3.Implies(numberSpace[row][col] >= 0, z3.Not(hasMine[row][col])))
+        # If a square has a number, there are exactly that many mines adjacent to it
+        num_neighbors_w_mines = z3.Sum([z3.If(mine,1, 0) for mine in mine_neighbors])
+        solver.add(z3.Implies(numberSpace[row][col] >= 0, numberSpace[row][col] == num_neighbors_w_mines))
 
 print("On this board, _ marks a square definitely doesn't contain a mine")
 print("\tand * marks a square that definitely contains a mine,")
 print("\twhile a number tells you how many mines are adjacent to that square")
+
+# Making unknown squares negative so the numberSpace = notMine constraint works
+for row in range(0, 5):
+    for col in range(0, 5):
+        solver.add(numberSpace[row][col] == -1)
 
 answer = "Ford the River"
 while answer != "Q":
@@ -79,8 +84,7 @@ while answer != "Q":
 
     # Find out what happened at this time step.
     answer = input("Please enter your board as (number of mines adjacent) (row) (column): ")
-
-    # Adding user input into solver
+    # Adding user input into solve, overwriting the  numberSpaces
     if len(answer) == 5 and answer[0] in ["0", "1", "2", "3", "4", "5", "6", "7", "8"] and answer[1] == " " and answer [3] == " " and answer[2] in ["0", "1", "2", "3", "4"] and answer[4] in ["0", "1", "2", "3", "4"]:
         solver.add(numberSpace[int(answer[2])][int(answer[4])] == int(answer[0]))
     elif answer != "Q":
