@@ -74,7 +74,9 @@ answer = "Ford the River"
 while answer != "Q":
     # Current board
     print("\nCurrent Board:")
+    print(" |0 1 2 3 4") #\n-+---------")
     for row in range(0, 5):
+        print(row, end='|')
         for col in range(0, 5):
             if user_input[row][col] is not None:
                 print(user_input[row][col], end=" ")
@@ -102,6 +104,11 @@ while answer != "Q":
     elif answer != "Q":
         print("Your response was not understood.")
     print()
+
+    # Call solver.check to see if the board was put into an impossible state
+    if(solver.check() == z3.unsat):
+        print("Input caused an impossible state.\nTerminating.")
+        exit(1)
 
 # Print out final board
 print("\nFinal Board:")
